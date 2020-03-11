@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ALAMBDA and ADEFINE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/srfi.css" type="text/css" />
+    <link href="/favicon.png" rel="icon" sizes="192x192" type="image/png" />
+    <style>
+     .references a {
+       display: block;
+       margin: 0.5em 0;
+     }
+     .references td:first-child {
+       vertical-align: top;
+       width: 5em;
+     }
+    </style>
+  </head>
+<body>
+
+<h1>Title</h1>
+
+ALAMBDA and ADEFINE
+
+<h1>Author</h1>
+
+Joo ChurlSoo
+
+<h1>Status</h1>
+
+
+<h1>Abstract</h1>
+
+<p>This SRFI introduces alambda, which creates a procedure that checks its
+actual arguments, takes various types of required and optional variables.<br>
+This SRFI is based on <a href="https://srfi.schemers.org/srfi-92/">SRFI 92</a> as an extension of the optional argument of <a href="https://srfi.schemers.org/srfi-182/">SRFI 182</a>.</p>
+
+
+<h1>Rationale</h1>
+
+<p>The syntax reduces not only the clutter of various error conditionals by
+checking actual arguments but also somewhat lengthy code by combining optional
+argument handling methods such as let-optionals and let-keywords into a single
+syntax.<br>
+The formal argument list of lambda is extended to discriminate among the
+various types of variables with quote, quasiquote, and unquote.</p>
+<p>Optional variables include not only sequent(positional) variables but also
+non-sequent variables.  The following are examples to show the various types
+of variables.</p>
+
+<ol>
+  <li><p>optional sequent variables</p>
+    <pre>
+((alambda (req &amp; (num req) (cha #\a) (str &quot;opt&quot;))
+   (list req num cha str))
+ 10 30 #\o)   	       	     	=&gt; (10 30 #\o &quot;opt&quot;)
+    </pre>
+  </li>
+  <li><p>optional keyword variables</p>
+    <pre>
+((alambda (req &amp; ('num req) ('cha #\a) ('str &quot;opt&quot;))
+   (list req num cha str))
+ 10 'str &quot;key&quot; 'num 30)	     	=&gt; (10 30 #\a &quot;key&quot;)
+
+((alambda (req &amp; (('num #:num) req) (('cha #:cha) #\a) (('str #:str) &quot;opt&quot;))
+   (list req num cha str))
+ 10 #:str &quot;key&quot; #:num 30)      	=&gt; (10 30 #\a &quot;key&quot;)
+    </pre>
+  </li>
+  <li><p>optional unnamed variables</p>
+    <pre>
+((alambda (req &amp; (,num req (number? num)) (,cha #\a (char? cha)) (,str &quot;opt&quot; (string? str)))
+   (list req num cha str))
+ 10 &quot;fox&quot; 30 #\f)      	     	=&gt; (10 30 #\f &quot;fox&quot;)
+    </pre>
+  </li>
+  <li><p>optional mixed variables</p>
+    <pre>
+((alambda (req &amp; ((`num #:num) req) (,cha #\a (char? cha)) (str &quot;opt&quot;) . rem)
+   (list req num cha str rem))
+ 10 &quot;fox&quot; #:num 30 #\f)	     	=&gt; (10 30 #\f &quot;fox&quot; ())
+
+((alambda (req &amp; (('num #:num) req) (,cha #\a (char? cha)) (str &quot;opt&quot;) . rem)
+   (list req num cha str rem))
+ 10 &quot;fox&quot; #:num 30 #\f)	     	=&gt; (10 10 #\f &quot;fox&quot; (#:num 30))
+    </pre>
+  </li>
+</ol>
+<p>Like optional variables, required variables can be divided into three groups,
+namely, sequent variables, keyword variables, and unnamed variables.  These
+are best explained by simple examples.</p>
+
+<ol>
+  <li><p>required sequent variables</p>
+    <pre>
+(adefine (str-ref-seq (str (string? str)) (num (integer? num)))
+  (string-ref str num))
+
+(str-ref-seq &quot;str&quot; 1)		=&gt; #\t
+(str-ref-seq 1 &quot;str&quot;)		=&gt; bad argument 1 s (string? s)
+    </pre>
+  </li>
+  <li><p>required keyword variables</p>
+    <pre>
+(adefine (str-ref-key ('str (string? str)) ('num (integer? num)))
+   (string-ref str num))
+
+(str-ref-key 'num 1 'str &quot;str&quot;)	=&gt; #\t
+(str-ref-key 'num 1 'str 123)	=&gt; bad argument 123 str (string? str)
+(str-ref-key 'num 1 'str)	=&gt; no argument for required keyword variable str
+    </pre>
+  </li>
+  <li><p>required unnamed variables</p>
+    <pre>
+(adefine (str-ref-fox (,str (string? str)) (,num (integer? num)))
+   (string-ref str num))
+
+(str-ref-fox &quot;str&quot; 1)	=&gt; #\t
+(str-ref-fox 1 &quot;str&quot;)	=&gt; #\t
+(str-ref-fox 1 123)	=&gt; no argument for required unnamed variable str
+(str-ref-fox 1 &quot;str&quot; 2)	=&gt; too many arguments (1 2)
+    </pre>
+  </li>
+</ol>
+
+<h1>Specification</h1>
+<pre>
+(alambda &lt;extended formals&gt; &lt;body&gt;)
+
+&lt;extended formals&gt; --&gt; &lt;variable&gt;
+	  | (&lt;required spec&gt;+ &lt;rest spec&gt;)
+	  | (&lt;required spec&gt;* &amp; &lt;optional spec&gt;+ &lt;rest spec&gt;)
+
+&lt;required spec&gt; --&gt;  &lt;required sequent spec&gt;
+		   | &lt;required keyword spec&gt;
+		   | &lt;required unnamed spec&gt;
+&lt;optional spec&gt; --&gt;  &lt;optional sequent spec&gt;
+		   | &lt;optional keyword spec&gt;
+		   | &lt;optional unnamed spec&gt;
+&lt;rest spec&gt; --&gt; . &lt;variable&gt; | &lt;empty&gt;
+
+&lt;required sequent spec&gt;	 --&gt; &lt;variable&gt; | (&lt;variable&gt; &lt;test spec&gt;)
+&lt;optional sequent spec&gt;	 --&gt; &lt;variable&gt; | (&lt;variable&gt; &lt;default spec&gt;)
+&lt;required unnamed spec&gt; --&gt; ,&lt;variable&gt; | (,&lt;variable&gt; &lt;test spec&gt;)
+&lt;optional unnamed spec&gt; --&gt; ,&lt;variable&gt; | (,&lt;variable&gt; &lt;default spec&gt;)
+&lt;required keyword spec&gt; --&gt;  &lt;key-spec&gt; | (&lt;key-spec&gt; &lt;test spec&gt;)
+&lt;optional keyword spec&gt; --&gt;  &lt;key-spec&gt; | (&lt;key-spec&gt; &lt;default spec&gt;)
+
+&lt;key-spec&gt; --&gt; '&lt;variable&gt;   		; two in a time
+	    |  `&lt;variable&gt;		; one in a time
+	    | ('&lt;variable&gt; &lt;keyword&gt;)
+	    | (`&lt;variable&gt; &lt;keyword&gt;)
+	    | ('&lt;variable&gt; &lt;keyword&gt; &lt;equivalence predicate&gt;)
+	    | (`&lt;variable&gt; &lt;keyword&gt; &lt;equivalence predicate&gt;)
+&lt;equivalence predicate&gt; --&gt; eq?		;default equivalent predicate
+	     		  | eqv?
+			  | equal?
+&lt;default spec&gt; --&gt; &lt;default&gt;
+	         | &lt;default&gt; &lt;test spec&gt;
+&lt;test spec&gt; --&gt; &lt;test&gt;
+	      | &lt;test&gt; &lt;true substitute&gt;
+	      |	&lt;test&gt; &lt;true substitute&gt; &lt;false substitute&gt;
+
+&lt;variable&gt; --&gt; &lt;identifier&gt;
+&lt;keyword&gt; &lt;default&gt; &lt;test&gt; &lt;true substitute&gt; &lt;false substitute&gt; --&gt; &lt;expression&gt;
+</pre>
+
+<p>The alambda is to the lambda what the let* is to the let.  The &lt;default&gt;,
+&lt;test&gt;, &lt;true substitute&gt;, and &lt;false substitute&gt; of alambda are evaluated in
+an environment that all the bindings of previous &lt;variable&gt;s are visible.</p>
+
+<p>There are three kinds of required variables - sequent, keyword, and unnamed.
+They determine the number of required actual argtuments, that is, the minimum
+arity of the resulting procedure.</p>
+
+<p>The required sequent variable is bound to the first one of the remaining
+actual argtuments.  If there is no more actual argtument, an error is
+signaled.</p>
+
+<p>The keyword used at a call site for the corresponding variable is a symbol of
+the same name as the variable or &lt;keyword&gt;.  The remaining arguments are
+interpreted one at a time(quote symbol) or two at a time(quasiquote) until an
+actual argument is the keyword, then the variable is bound to the next actual
+argument.  If there is no keyword or the keyword is the last actual argument,
+an error is signaled.</p>
+
+<p>The required unnamed variable is temporarily bound to each of remaining actual
+arguments sequentially, until &lt;test&gt; returns a true value, then the variable
+is finally bound to the passed argument.  If there is no &lt;test&gt;, the first one
+of the remaining actual arguments is regarded as passing.  If any actual
+argument does not pass &lt;test&gt;, an error is signaled.  If there is a &lt;false
+substitute&gt; and &lt;test&gt; returns a false value, the variable is finally bound to
+the &lt;false substitute&gt; instead of the above process.  If there is a &lt;true
+substitute&gt; and &lt;test&gt; returns a true value, the variable is rebound to the
+&lt;true substitute&gt;.</p>
+
+<p>The binding method of the optional sequent variable is the same as that of the
+required sequent variable except that the variable is bound to the &lt;default&gt;
+instead of signaling an error if there are no remaining actual arguments.
+When &lt;default&gt; is not specified, #f is the default.</p>
+
+<p>The binding method of the optional keyword variable is the same as that of the
+required keyword variable except that the variable is bound to the &lt;default&gt;
+instead of signaling an error if there is no keyword or the keyword is the
+last actual argument.  When &lt;default&gt; is not specified, #f is the default.</p>
+
+<p>The binding method of the optional unnamed variable is the same as that of the
+required unnamed variable except that the variable is bound to the &lt;default&gt;
+instead of signaling an error if any actual argument does not pass &lt;test&gt;.
+When &lt;default&gt; is not specified, #f is the default.</p>
+
+<p>When there are remaining actual arguments, an error is signaled if dotted rest
+variable is not given.  If dotted rest variable is given, it is bound to the
+remaining actual arguments.</p>
+
+<p>The following are applied to all &lt;variable&gt;s except &lt;unnamed variable&gt;s:
+If there is a &lt;test&gt;, it is evaluated only when the vaiable is bound to an
+actual argument.  If it returns a false value and there is no &lt;false
+substitute&gt;, an error is signaled.  If it returns a false value and there is a
+&lt;false substitute&gt;, the variable is rebound to the &lt;false substitute&gt; instead
+of signaling an error.  If it returns a true value and there is a &lt;true
+substitute&gt;, the variable is rebound to the &lt;true substitute&gt;.</p>
+
+<pre>
+(adefine name &lt;expression&gt;)
+(adefine (name . &lt;extended formals&gt;) &lt;body&gt;)
+</pre>
+<p>These are the same as the DEFINE except &lt;extended formals&gt;.</p>
+
+
+<p>Examples</p>
+<pre>
+(define ranking
+  (alambda ((country (string? country)) (,season (symbol? season)) &amp;
+	    ((`1st 1 eqv?) &quot;Ben Hur&quot;)
+	    ((`2nd 2 eqv?) &quot;Mission&quot;)
+	    ((`3rd 3 eqv?) &quot;Sting&quot;)
+	    ((`4th 4 eqv?) &quot;Escape&quot;))
+    (list country season 1st 2nd 3rd 4th)))
+
+(ranking &quot;USA&quot; 'Spring 4 &quot;Ben Hur&quot; 1 &quot;Mission Impossible&quot;)
+=&gt; (&quot;USA&quot; Spring &quot;Mission Impossible&quot; &quot;Mission&quot; &quot;Sting&quot; &quot;Ben Hur&quot;)
+(ranking &quot;USA&quot; 4 &quot;Ben Hur&quot; 'Spring 1 &quot;Mission Impossible&quot;)
+=&gt; (&quot;USA&quot; Spring &quot;Mission Impossible&quot; &quot;Mission&quot; &quot;Sting&quot; &quot;Ben Hur&quot;)
+(ranking &quot;USA&quot; 'Winter)
+=&gt; (&quot;USA&quot; Winter &quot;Ben Hur&quot; &quot;Mission&quot; &quot;Sting&quot; &quot;Escape&quot;)
+(ranking 'USA 'Winter)
+=&gt; bad argument USA country (string? country)
+</pre>
+
+<h1>Sample Implementation</h1>
+
+<p>Sample implementations are provided based on both
+<code>define-syntax</code> and <code>define-macro</code>.  They're
+available both in the <a href="https://github.com/scheme-requests-for-implementation/srfi-182">Github repo</a> and in <a href= "https://srfi.schemers.org/srfi-182/srfi-182.tgz">this <code>.tgz</code> file</a>.</p>
+
+<h1>References</h1>
+<table class="references">
+<tr><td>[R5RS]</td><td>Richard Kelsey, William Clinger, and Jonathan Rees: Revised(5) Report on the Algorithmic Language Scheme.<a href="http://www.schemers.org/Documents/Standards/R5RS/" class="eponymous">http://www.schemers.org/Documents/Standards/R5RS/</a></td></tr>
+<tr><td>[R6RS]</td><td>Michael Sperber, R. Kent Dybvig, Matthew Flatt, and Anton von Straaten: Revised(6) Report on the Algorithmic Language Scheme.<a class="eponymous" href="http://www.r6rs.org">http://www.r6rs.org</a></td></tr>
+<tr><td>[SRFI 51]</td><td>Joo ChurlSoo: Handling rest list.<a class="eponymous" href="https://srfi.schemers.org/srfi-51/">https://srfi.schemers.org/srfi-51/</a></td></tr>
+<tr><td>[SRFI 54]</td><td>Joo ChurlSoo: Formatting.<a class="eponymous" href="https://srfi.schemers.org/srfi-54/">https://srfi.schemers.org/srfi-54/</a></td></tr>
+<tr><td>[SRFI 86]</td><td>Joo ChurlSoo: MU and NU simulating VALUES &amp; CALL-WITH-VALUES, and their related LET-syntax.<a class="eponymous" href="https://srfi.schemers.org/srfi-86/">https://srfi.schemers.org/srfi-86/</a></td></tr>
+<tr><td>[SRFI 89]</td><td>Marc Feeley: Optional and named parameters. <a class="eponymous" href="http://srfi.schemers.org/srfi-89/">http://srfi.schemers.org/srfi-89/</a></td></tr>
+<tr><td>[SRFI 92]</td><td>Joo ChurlSoo: Alambda and Alambda*.<a class="eponymous" href="http://srfi.schemers.org/srfi-89/">http://srfi.schemers.org/srfi-89/</a></td></tr>
+<tr><td>[SRFI 182]</td><td>Joo ChurlSoo: Adbmal, Alet, and Alet*.<a class="eponymous" href="http://srfi.schemers.org/srfi-182/">http://srfi.schemers.org/srfi-182/</a></td></tr></table>
+
+<h1>Copyright</h1>
+
+Copyright &copy; Joo ChurlSoo (2012).
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+<p>
+The above copyright notice and this permission notice (including the
+next paragraph) shall be included in all copies or substantial
+portions of the Software.
+
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+<address>Editor: <a href="mailto:srfi-editors+at+srfi+dot+schemers+dot+org">Arthur A. Gleckler</a></address>
+</body></html>
