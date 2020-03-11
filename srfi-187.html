@@ -175,16 +175,16 @@ are best explained by simple examples.</p>
 an environment that all the bindings of previous &lt;variable&gt;s are visible.</p>
 
 <p>There are three kinds of required variables - sequent, keyword, and unnamed.
-They determine the number of required actual argtuments, that is, the minimum
+They determine the number of required actual arguments, that is, the minimum
 arity of the resulting procedure.</p>
 
 <p>The required sequent variable is bound to the first one of the remaining
-actual argtuments.  If there is no more actual argtument, an error is
+actual arguments.  If there are no more actual arguments, an error is
 signaled.</p>
 
 <p>The keyword used at a call site for the corresponding variable is a symbol of
 the same name as the variable or &lt;keyword&gt;.  The remaining arguments are
-interpreted one at a time(quote symbol) or two at a time(quasiquote) until an
+interpreted one at a time (quote symbol) or two at a time (quasiquote) until an
 actual argument is the keyword, then the variable is bound to the next actual
 argument.  If there is no keyword or the keyword is the last actual argument,
 an error is signaled.</p>
@@ -219,7 +219,7 @@ variable is not given.  If dotted rest variable is given, it is bound to the
 remaining actual arguments.</p>
 
 <p>The following are applied to all &lt;variable&gt;s except &lt;unnamed variable&gt;s:
-If there is a &lt;test&gt;, it is evaluated only when the vaiable is bound to an
+If there is a &lt;test&gt;, it is evaluated only when the variable is bound to an
 actual argument.  If it returns a false value and there is no &lt;false
 substitute&gt;, an error is signaled.  If it returns a false value and there is a
 &lt;false substitute&gt;, the variable is rebound to the &lt;false substitute&gt; instead
