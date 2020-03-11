@@ -103,12 +103,15 @@ are best explained by simple examples.</p>
   </li>
   <li><p>required keyword variables</p>
     <pre>
-(adefine (str-ref-key ('str (string? str)) ('num (integer? num)))
-   (string-ref str num))
+(adefine (str-ref-key 'str 'num)
+ (string-ref str num))
 
-(str-ref-key 'num 1 'str &quot;str&quot;)	=&gt; #\t
-(str-ref-key 'num 1 'str 123)	=&gt; bad argument 123 str (string? str)
-(str-ref-key 'num 1 'str)	=&gt; no argument for required keyword variable str
+(str-ref-key 'num 1 'str &quot;str&quot;)	 	=&gt; #\t
+
+(adefine (str-ref-key (('str #:str)) (('num #:num)))
+ (string-ref str num))
+
+(str-ref-key #:num 1 #:str &quot;str&quot;)	=&gt; #\t
     </pre>
   </li>
   <li><p>required unnamed variables</p>
@@ -129,7 +132,7 @@ are best explained by simple examples.</p>
 (alambda &lt;extended formals&gt; &lt;body&gt;)
 
 &lt;extended formals&gt; --&gt; &lt;variable&gt;
-          | (&lt;required spec&gt;*)
+	  | (&lt;required spec&gt;*)
 	  | (&lt;required spec&gt;+ &lt;rest spec&gt;)
 	  | (&lt;required spec&gt;* &amp; &lt;optional spec&gt;+ &lt;rest spec&gt;)
 
@@ -229,26 +232,6 @@ substitute&gt;, the variable is rebound to the &lt;true substitute&gt;.</p>
 </pre>
 <p>These are the same as the DEFINE except &lt;extended formals&gt;.</p>
 
-
-<p>Examples</p>
-<pre>
-(define ranking
-  (alambda ((country (string? country)) (,season (symbol? season)) &amp;
-	    ((`1st 1 eqv?) &quot;Ben Hur&quot;)
-	    ((`2nd 2 eqv?) &quot;Mission&quot;)
-	    ((`3rd 3 eqv?) &quot;Sting&quot;)
-	    ((`4th 4 eqv?) &quot;Escape&quot;))
-    (list country season 1st 2nd 3rd 4th)))
-
-(ranking &quot;USA&quot; 'Spring 4 &quot;Ben Hur&quot; 1 &quot;Mission Impossible&quot;)
-=&gt; (&quot;USA&quot; Spring &quot;Mission Impossible&quot; &quot;Mission&quot; &quot;Sting&quot; &quot;Ben Hur&quot;)
-(ranking &quot;USA&quot; 4 &quot;Ben Hur&quot; 'Spring 1 &quot;Mission Impossible&quot;)
-=&gt; (&quot;USA&quot; Spring &quot;Mission Impossible&quot; &quot;Mission&quot; &quot;Sting&quot; &quot;Ben Hur&quot;)
-(ranking &quot;USA&quot; 'Winter)
-=&gt; (&quot;USA&quot; Winter &quot;Ben Hur&quot; &quot;Mission&quot; &quot;Sting&quot; &quot;Escape&quot;)
-(ranking 'USA 'Winter)
-=&gt; bad argument USA country (string? country)
-</pre>
 
 <h1>Sample Implementation</h1>
 
