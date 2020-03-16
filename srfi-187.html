@@ -251,19 +251,29 @@ substitute&gt;, the variable is rebound to the &lt;true substitute&gt;.</p>
 </pre>
 <p>These are the same as the DEFINE except &lt;extended formals&gt;.</p>
 
-<p>Examples to clarify how to use the the variable delimiter:</p>
+<p>Examples to clarify how to use the variable delimiter:</p>
 <pre>
 ((alambda (a b &amp;)		;The ampersand is a required variable.
    (list a b &amp;))
  1 2 3)
 =&gt; (1 2 3)
 
+((alambda ((&amp; #t) ,&amp; &amp;)		;(&amp; #t) required sequent variable
+   &amp;)	      	     		;,&amp; 	required unnamed variable
+ 1 2 3)				;&amp;	required sequent variable
+=&gt; 3
+
+((alambda ((&amp; #t) ,&amp; &amp;)		;Both (&amp; #t) and ,&amp; are &lt;extended formals&gt;.
+   &amp;)
+ 1 2)
+=&gt; error: no argument for required sequent variable &amp;
+
 ((alambda (&amp; &amp; &amp; . e)		;1st &amp;: delimiter (This is not &lt;rnrs formals&gt;)
    (list &amp; e)) 	 		;2nd &amp;: optional sequent variable
  1 2 3)	 			;3rd &amp;: optional sequent variable
 =&gt; (2 (3))
 
-((alambda (&amp; . &amp;)		;This is &lt;RNRS formals&gt;.
+((alambda (&amp; . &amp;)		;This is &lt;rnrs formals&gt;.
    (list &amp;))
  1 2 3)
 =&gt; error: Duplicate parameter in parameter list
