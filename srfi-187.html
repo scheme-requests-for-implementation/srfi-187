@@ -136,12 +136,16 @@ are best explained by simple examples.</p>
 
 <h1>Specification</h1>
 <pre>
+(alambda &lt;rnrs formals&gt; &lt;body&gt;)		;The alambda is the same as the lambda.
+
 (alambda &lt;extended formals&gt; &lt;body&gt;)
 
 &lt;extended formals&gt; --&gt; &lt;variable&gt;
 	  | (&lt;required spec&gt;*)
 	  | (&lt;required spec&gt;+ &lt;rest spec&gt;)
-          | (&lt;required spec&gt;* &amp; &lt;optional spec&gt;* &lt;rest spec&gt;)
+	  | (&lt;required spec&gt;* &amp; &lt;optional spec&gt;+ &lt;rest spec&gt;)
+
+&amp; --&gt; &lt;delimiter&gt; | &lt;variable&gt;
 
 &lt;required spec&gt; --&gt;  &lt;required sequent spec&gt;
 		   | &lt;required keyword spec&gt;
@@ -177,9 +181,17 @@ are best explained by simple examples.</p>
 &lt;keyword&gt; &lt;default&gt; &lt;test&gt; &lt;true substitute&gt; &lt;false substitute&gt; --&gt; &lt;expression&gt;
 </pre>
 
-<p>The alambda is to the lambda what the let* is to the let.  The &lt;default&gt;,
-&lt;test&gt;, &lt;true substitute&gt;, and &lt;false substitute&gt; of alambda are evaluated in
-an environment that all the bindings of previous &lt;variable&gt;s are visible.</p>
+<p>The alambda of &lt;extended formals&gt; is to the lambda what the let* is
+  to the let.<br>
+The &lt;default&gt;, &lt;test&gt;, &lt;true substitute&gt;, and &lt;false substitute&gt; of alambda
+are evaluated in an environment that all the bindings of previous &lt;variable&gt;s
+are visible.  But duplication of variables is permitted only after an extended
+variable of &lt;extended formals&gt; appears.</p>
+
+<p>The ampersand character is not only used as a variable delimiter but also as
+an ordinary variable.  The delimiter separates optional variables from
+required variables, and it also becomes an ordinary variable If syntax does
+not require distinction between required and optional variables.</p>
 
 <p>There are three kinds of required variables - sequent, keyword, and unnamed.
 They determine the number of required actual arguments, that is, the minimum
@@ -239,12 +251,42 @@ substitute&gt;, the variable is rebound to the &lt;true substitute&gt;.</p>
 </pre>
 <p>These are the same as the DEFINE except &lt;extended formals&gt;.</p>
 
+<p>Examples to clarify how to use the the variable delimiter:</p>
+<pre>
+((alambda (a b &amp;)		;The ampersand is a required variable.
+   (list a b &amp;))
+ 1 2 3)
+=&gt; (1 2 3)
+
+((alambda (&amp; &amp; &amp; . e)		;1st &amp;: delimiter (This is not &lt;rnrs formals&gt;)
+   (list &amp; e)) 	 		;2nd &amp;: optional sequent variable
+ 1 2 3)	 			;3rd &amp;: optional sequent variable
+=&gt; (2 (3))
+
+((alambda (&amp; . &amp;)		;This is &lt;RNRS formals&gt;.
+   (list &amp;))
+ 1 2 3)
+=&gt; error: Duplicate parameter in parameter list
+
+((alambda (&amp; . e)   	      	;The ampersand is a required variable.
+   (list &amp; e))
+ 1 2 3)
+=&gt; (1 (2 3))
+
+((alambda (a b c a b c)
+   (list a b c))
+ 1 2 3 4 5 6)
+=&gt; error: Duplicate parameter in parameter list
+
+((alambda (a b c `a b c)      	;Duplication of variables is permitted
+   (list a b c))      		;only after an extended variable of
+ 1 2 3 4 5 'a 6)		;&lt;extended formals&gt; appears.
+=&gt; (6 4 5)
+</pre>
 
 <h1>Sample Implementation</h1>
 
-<p>Sample implementations are provided based on both
-<code>define-syntax</code> and <code>define-macro</code>.  They're
-available both in the <a href="https://github.com/scheme-requests-for-implementation/srfi-182">Github repo</a> and in <a href= "https://srfi.schemers.org/srfi-187/srfi-187.tgz">this <code>.tgz</code> file</a>.</p>
+<p>Sample implementation is provided based on <code>define-macro</code> only, because it cannot be implemented with <code>define-syntax(syntax-rules)</code>.  It is available both in the <a href="https://github.com/scheme-requests-for-implementation/srfi-187">Github repo</a> and in <a href= "https://srfi.schemers.org/srfi-187/srfi-187.scm">this file</a>.</p>
 
 <h1>References</h1>
 <table class="references">
@@ -254,7 +296,7 @@ available both in the <a href="https://github.com/scheme-requests-for-implementa
 <tr><td>[SRFI 54]</td><td>Joo ChurlSoo: Formatting.<a class="eponymous" href="https://srfi.schemers.org/srfi-54/">https://srfi.schemers.org/srfi-54/</a></td></tr>
 <tr><td>[SRFI 86]</td><td>Joo ChurlSoo: MU and NU simulating VALUES &amp; CALL-WITH-VALUES, and their related LET-syntax.<a class="eponymous" href="https://srfi.schemers.org/srfi-86/">https://srfi.schemers.org/srfi-86/</a></td></tr>
 <tr><td>[SRFI 89]</td><td>Marc Feeley: Optional and named parameters. <a class="eponymous" href="http://srfi.schemers.org/srfi-89/">http://srfi.schemers.org/srfi-89/</a></td></tr>
-<tr><td>[SRFI 92]</td><td>Joo ChurlSoo: Alambda and Alambda*.<a class="eponymous" href="http://srfi.schemers.org/srfi-89/">http://srfi.schemers.org/srfi-89/</a></td></tr>
+<tr><td>[SRFI 92]</td><td>Joo ChurlSoo: Alambda and Alambda*.<a class="eponymous" href="http://srfi.schemers.org/srfi-92/">http://srfi.schemers.org/srfi-89/</a></td></tr>
 <tr><td>[SRFI 182]</td><td>Joo ChurlSoo: Adbmal, Alet, and Alet*.<a class="eponymous" href="http://srfi.schemers.org/srfi-182/">http://srfi.schemers.org/srfi-182/</a></td></tr></table>
 
 <h1>Copyright</h1>
