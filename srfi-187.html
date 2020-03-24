@@ -53,43 +53,51 @@ argument handling methods such as let-optionals and let-keywords into a single
 syntax.<br>
 The formal argument list of lambda is extended to discriminate among the
 various types of variables with quote, quasiquote, and unquote.</p>
-<p>Optional variables include not only sequent(positional) variables but also
-non-sequent variables.  The following are examples to show the various types
-of variables.</p>
+<p>Optional variables include not only sequent variables but also non-sequent
+variables.<br>
+The following are examples to show the various types of variables.</p>
 
 <ol>
   <li><p>optional sequent variables</p>
     <pre>
-((alambda (req &amp; (num req) (cha #\a) (str &quot;opt&quot;))
+((alambda (req () num cha str)	       	  ;same as (#f)
+   (list req num cha str))
+ 10)				=&gt; (10 #f #f #f)
+
+((alambda (req ('undefined) num cha str)
+   (list req num cha str))
+ 10)				=&gt; (10 undefined undefined undefined)
+
+((alambda (req () (num req) (cha #\a) (str &quot;opt&quot;))
    (list req num cha str))
  10 30 #\o)   	       	     	=&gt; (10 30 #\o &quot;opt&quot;)
     </pre>
   </li>
   <li><p>optional keyword variables</p>
     <pre>
-((alambda (req &amp; ('num req) ('cha #\a) ('str &quot;opt&quot;))
+((alambda (req () ('num req) ('cha #\a) ('str &quot;opt&quot;))
    (list req num cha str))
  10 'str &quot;key&quot; 'num 30)	     	=&gt; (10 30 #\a &quot;key&quot;)
 
-((alambda (req &amp; (('num #:num) req) (('cha #:cha) #\a) (('str #:str) &quot;opt&quot;))
+((alambda (req () (('num #:num) req) (('cha #:cha) #\a) (('str #:str) &quot;opt&quot;))
    (list req num cha str))
  10 #:str &quot;key&quot; #:num 30)      	=&gt; (10 30 #\a &quot;key&quot;)
     </pre>
   </li>
   <li><p>optional unnamed variables</p>
     <pre>
-((alambda (req &amp; (,num req (number? num)) (,cha #\a (char? cha)) (,str &quot;opt&quot; (string? str)))
+((alambda (req () (,num req (number? num)) (,cha #\a (char? cha)) (,str &quot;opt&quot;))
    (list req num cha str))
  10 &quot;fox&quot; 30 #\f)      	     	=&gt; (10 30 #\f &quot;fox&quot;)
     </pre>
   </li>
   <li><p>optional mixed variables</p>
     <pre>
-((alambda (req &amp; ((`num #:num) req) (,cha #\a (char? cha)) (str &quot;opt&quot;) . rem)
+((alambda (req () ((`num #:num) req) (,cha #\a (char? cha)) (str &quot;opt&quot;) . rem)
    (list req num cha str rem))
  10 &quot;fox&quot; #:num 30 #\f)	     	=&gt; (10 30 #\f &quot;fox&quot; ())
 
-((alambda (req &amp; (('num #:num) req) (,cha #\a (char? cha)) (str &quot;opt&quot;) . rem)
+((alambda (req () (('num #:num) req) (,cha #\a (char? cha)) (str &quot;opt&quot;) . rem)
    (list req num cha str rem))
  10 &quot;fox&quot; #:num 30 #\f)	     	=&gt; (10 10 #\f &quot;fox&quot; (#:num 30))
     </pre>
@@ -142,11 +150,10 @@ are best explained by simple examples.</p>
 (alambda &lt;extended formals&gt; &lt;body&gt;)
 
 &lt;extended formals&gt; --&gt; &lt;variable&gt;
-	  | (&lt;required spec&gt;*)
-	  | (&lt;required spec&gt;+ &lt;rest spec&gt;)
-	  | (&lt;required spec&gt;* &amp; &lt;optional spec&gt;+ &lt;rest spec&gt;)
+	       | (&lt;required spec&gt;* &lt;delimiter&gt; &lt;optional spec&gt;* &lt;rest spec&gt;)
 
-&amp; --&gt; &lt;delimiter&gt; | &lt;variable&gt;
+&lt;delimiter&gt; -- ()
+	     | (default)
 
 &lt;required spec&gt; --&gt;  &lt;required sequent spec&gt;
 		   | &lt;required keyword spec&gt;
@@ -156,15 +163,15 @@ are best explained by simple examples.</p>
 		   | &lt;optional unnamed spec&gt;
 &lt;rest spec&gt; --&gt; . &lt;variable&gt; | &lt;empty&gt;
 
-&lt;required sequent spec&gt;	 --&gt; &lt;variable&gt; | (&lt;variable&gt; &lt;test spec&gt;)
-&lt;optional sequent spec&gt;	 --&gt; &lt;variable&gt; | (&lt;variable&gt; &lt;default spec&gt;)
+&lt;required sequent spec&gt;	 --&gt; &lt;variable&gt; | ( &lt;variable&gt; &lt;test spec&gt;)
+&lt;required keyword spec&gt; --&gt;  &lt;key-spec&gt; | ( &lt;key-spec&gt; &lt;test spec&gt;)
 &lt;required unnamed spec&gt; --&gt; ,&lt;variable&gt; | (,&lt;variable&gt; &lt;test spec&gt;)
+&lt;optional sequent spec&gt;	 --&gt; &lt;variable&gt; | ( &lt;variable&gt; &lt;default spec&gt;)
+&lt;optional keyword spec&gt; --&gt;  &lt;key-spec&gt; | ( &lt;key-spec&gt; &lt;default spec&gt;)
 &lt;optional unnamed spec&gt; --&gt; ,&lt;variable&gt; | (,&lt;variable&gt; &lt;default spec&gt;)
-&lt;required keyword spec&gt; --&gt;  &lt;key-spec&gt; | (&lt;key-spec&gt; &lt;test spec&gt;)
-&lt;optional keyword spec&gt; --&gt;  &lt;key-spec&gt; | (&lt;key-spec&gt; &lt;default spec&gt;)
 
-&lt;key-spec&gt; --&gt; '&lt;variable&gt;   		; two in a time
-	    |  `&lt;variable&gt;		; one in a time
+&lt;key-spec&gt; --&gt; '&lt;variable&gt;   		; two at a time
+	    |  `&lt;variable&gt;		; one at a time
 	    | ('&lt;variable&gt; &lt;keyword&gt;)
 	    | (`&lt;variable&gt; &lt;keyword&gt;)
 	    | ('&lt;variable&gt; &lt;keyword&gt; &lt;equivalence predicate&gt;)
@@ -172,6 +179,7 @@ are best explained by simple examples.</p>
 &lt;equivalence predicate&gt; --&gt; eq?		;default equivalent predicate
 	     		  | eqv?
 			  | equal?
+
 &lt;default spec&gt; --&gt; &lt;default&gt;
 	         | &lt;default&gt; &lt;test spec&gt;
 &lt;test spec&gt; --&gt; &lt;test&gt;
@@ -189,10 +197,10 @@ are evaluated in an environment in which all the bindings of previous &lt;variab
 are visible.  But duplication of variables is permitted only after an extended
 variable of &lt;extended formals&gt; appears.</p>
 
-<p>The ampersand character is not only used as a variable delimiter but also as
-an ordinary variable.  In other words, it becomes a delimiter if syntax
-requires a distinction between required and optional variables, and becomes
-an ordinary variable if not.</p>
+<p>There are two types of delimiter, which separate variables into required and
+optional variables. One is an empty list and the other is a list with one
+element. The former has #f as the default value and the latter has its
+  element.</p>
 
 <p>There are three kinds of required variables - sequent, keyword, and unnamed.
 They determine the number of required actual arguments, that is, the minimum
@@ -204,10 +212,10 @@ signaled.</p>
 
 <p>The keyword used at a call site for the corresponding variable is a symbol of
 the same name as the variable or &lt;keyword&gt;.  The remaining arguments are
-interpreted one at a time (quote symbol) or two at a time (quasiquote) until an
-actual argument is the keyword, then the variable is bound to the next actual
-argument.  If there is no keyword or the keyword is the last actual argument,
-an error is signaled.</p>
+interpreted one at a time (quote symbol) or two at a time (quasiquote symbol)
+until an actual argument is the keyword, then the variable is bound to the next
+actual argument.  If there is no keyword or the keyword is the last actual
+argument, an error is signaled.</p>
 
 <p>The required unnamed variable is temporarily bound to each of remaining actual
 arguments sequentially, until &lt;test&gt; returns a true value, then the variable
@@ -252,52 +260,11 @@ substitute&gt;, the variable is rebound to the &lt;true substitute&gt;.</p>
 </pre>
 <p>These are the same as the DEFINE except &lt;extended formals&gt;.</p>
 
-<p>Examples to clarify how to use the variable delimiter:</p>
-<pre>
-((alambda (a b &amp;)		;The ampersand is a required variable.
-   (list a b &amp;))
- 1 2 3)
-=&gt; (1 2 3)
-
-((alambda ((&amp; #t) ,&amp; &amp;)		;(&amp; #t) required sequent variable
-   &amp;)	      	     		;,&amp; 	required unnamed variable
- 1 2 3)				;&amp;	required sequent variable
-=&gt; 3
-
-((alambda ((&amp; #t) ,&amp; &amp;)		;Both (&amp; #t) and ,&amp; are &lt;extended formals&gt;.
-   &amp;)
- 1 2)
-=&gt; error: no argument for required sequent variable &amp;
-
-((alambda (&amp; &amp; &amp; . e)		;1st &amp;: delimiter (This is not &lt;rnrs formals&gt;)
-   (list &amp; e)) 	 		;2nd &amp;: optional sequent variable
- 1 2 3)	 			;3rd &amp;: optional sequent variable
-=&gt; (2 (3))
-
-((alambda (&amp; . &amp;)		;This is &lt;rnrs formals&gt;.
-   (list &amp;))
- 1 2 3)
-=&gt; error: Duplicate parameter in parameter list
-
-((alambda (&amp; . e)   	      	;The ampersand is a required variable.
-   (list &amp; e))
- 1 2 3)
-=&gt; (1 (2 3))
-
-((alambda (a b c a b c)
-   (list a b c))
- 1 2 3 4 5 6)
-=&gt; error: Duplicate parameter in parameter list
-
-((alambda (a b c `a b c)      	;Duplication of variables is permitted
-   (list a b c))      		;only after an extended variable of
- 1 2 3 4 5 'a 6)		;&lt;extended formals&gt; appears.
-=&gt; (6 4 5)
-</pre>
-
 <h1>Sample Implementation</h1>
 
-<p>Sample implementation is provided based on <code>define-macro</code> only, because it cannot be implemented with <code>define-syntax(syntax-rules)</code>.  It is available both in the <a href="https://github.com/scheme-requests-for-implementation/srfi-187">Github repo</a> and in <a href= "https://srfi.schemers.org/srfi-187/alambda-macro.scm">this file</a>.</p>
+<p>Sample implementations are provided based on both
+<code>define-syntax</code> and <code>define-macro</code>.  They're
+available both in the <a href="https://github.com/scheme-requests-for-implementation/srfi-187">Github repo</a> and in <a href= "https://srfi.schemers.org/srfi-187/srfi-187.tgz">this <code>.tgz</code> file</a>.</p>
 
 <h1>References</h1>
 <table class="references">
