@@ -8,7 +8,7 @@ Based on SRFI 92.
 
 This repository hosts [[https://srfi.schemers.org/srfi-187/][SRFI 187]]: ALAMBDA and ADEFINE, a [[https://srfi.schemers.org/][Scheme Request for Implementation]].
 
-This SRFI is in /draft/ status.
+This SRFI is in /withdrawn/ status.
 
 See also [[https://srfi.schemers.org/srfi-92/][SRFI 92: ALAMBDA and ALAMBDA*]] and [[https://srfi.schemers.org/srfi-182/][SRFI 182: ADBMAL, ALET, and ALET*]].
 
